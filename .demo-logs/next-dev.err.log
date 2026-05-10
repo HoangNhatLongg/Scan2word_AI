@@ -1,0 +1,107 @@
+ ⚠ ./src/app/api/ocr/mistral/route.ts
+Attempted import error: '@mistralai/mistralai' does not contain a default export (imported as 'Mistral').
+
+Import trace for requested module:
+./src/app/api/ocr/mistral/route.ts
+ ⨯ src\app\api\ocr\mistral\route.ts (4:16) @ eval
+ ⨯ TypeError: _mistralai_mistralai__WEBPACK_IMPORTED_MODULE_1__.default is not a constructor
+    at eval (webpack-internal:///(rsc)/./src/app/api/ocr/mistral/route.ts:9:17)
+    at (rsc)/./src/app/api/ocr/mistral/route.ts (C:\CNTT\TriTueNhanTao\Scan2Word AI\.next\server\app\api\ocr\mistral\route.js:42:1)
+    at __webpack_require__ (C:\CNTT\TriTueNhanTao\Scan2Word AI\.next\server\webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Focr%2Fmistral%2Froute&page=%2Fapi%2Focr%2Fmistral%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Focr%2Fmistral%2Froute.ts&appDir=C%3A%5CCNTT%5CTriTueNhanTao%5CScan2Word%20AI%5Csrc%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CCNTT%5CTriTueNhanTao%5CScan2Word%20AI&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D!:17:124)
+    at (rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Focr%2Fmistral%2Froute&page=%2Fapi%2Focr%2Fmistral%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Focr%2Fmistral%2Froute.ts&appDir=C%3A%5CCNTT%5CTriTueNhanTao%5CScan2Word%20AI%5Csrc%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CCNTT%5CTriTueNhanTao%5CScan2Word%20AI&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D! (C:\CNTT\TriTueNhanTao\Scan2Word AI\.next\server\app\api\ocr\mistral\route.js:32:1)
+    at __webpack_require__ (C:\CNTT\TriTueNhanTao\Scan2Word AI\.next\server\webpack-runtime.js:33:43)
+    at __webpack_exec__ (C:\CNTT\TriTueNhanTao\Scan2Word AI\.next\server\app\api\ocr\mistral\route.js:52:39)
+    at C:\CNTT\TriTueNhanTao\Scan2Word AI\.next\server\app\api\ocr\mistral\route.js:53:165
+    at __webpack_require__.X (C:\CNTT\TriTueNhanTao\Scan2Word AI\.next\server\webpack-runtime.js:168:21)
+    at C:\CNTT\TriTueNhanTao\Scan2Word AI\.next\server\app\api\ocr\mistral\route.js:53:47
+    at Object.<anonymous> (C:\CNTT\TriTueNhanTao\Scan2Word AI\.next\server\app\api\ocr\mistral\route.js:56:3)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\require.js:109:84)
+    at C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\next-server.js:664:36)
+    at async DevServer.findPageComponents (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\dev\next-dev-server.js:565:20)
+    at async DevServer.renderPageComponent (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\base-server.js:1830:24)
+    at async DevServer.renderToResponseImpl (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\base-server.js:1880:32)
+    at async DevServer.pipeImpl (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\base-server.js:893:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\next-server.js:269:17)
+    at async DevServer.handleRequestImpl (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\base-server.js:789:17)
+    at async C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\dev\next-dev-server.js:331:20
+    at async Span.traceAsyncFn (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\trace\trace.js:151:20)
+    at async DevServer.handleRequest (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\dev\next-dev-server.js:328:24)
+    at async invokeRender (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\lib\start-server.js:140:13) {
+  page: '/api/ocr/mistral'
+}
+[0m [90m 2 |[39m [36mimport[39m [33mMistral[39m [36mfrom[39m [32m'@mistralai/mistralai'[39m[0m
+[0m [90m 3 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 4 |[39m [36mconst[39m mistral [33m=[39m [36mnew[39m [33mMistral[39m({[0m
+[0m [90m   |[39m                [31m[1m^[22m[39m[0m
+[0m [90m 5 |[39m   apiKey[33m:[39m process[33m.[39menv[33m.[39m[33mMISTRAL_API_KEY[39m[33m,[39m[0m
+[0m [90m 6 |[39m })[0m
+[0m [90m 7 |[39m[0m
+ ⚠ ./src/app/api/ocr/mistral/route.ts
+Attempted import error: '@mistralai/mistralai' does not contain a default export (imported as 'Mistral').
+
+Import trace for requested module:
+./src/app/api/ocr/mistral/route.ts
+ ⚠ ./src/app/api/ocr/mistral/route.ts
+Attempted import error: '@mistralai/mistralai' does not contain a default export (imported as 'Mistral').
+
+Import trace for requested module:
+./src/app/api/ocr/mistral/route.ts
+ ⚠ ./src/app/api/ocr/mistral/route.ts
+Attempted import error: '@mistralai/mistralai' does not contain a default export (imported as 'Mistral').
+
+Import trace for requested module:
+./src/app/api/ocr/mistral/route.ts
+ ⚠ ./src/app/api/ocr/mistral/route.ts
+Attempted import error: '@mistralai/mistralai' does not contain a default export (imported as 'Mistral').
+
+Import trace for requested module:
+./src/app/api/ocr/mistral/route.ts
+ ⚠ ./src/app/api/ocr/mistral/route.ts
+Attempted import error: '@mistralai/mistralai' does not contain a default export (imported as 'Mistral').
+
+Import trace for requested module:
+./src/app/api/ocr/mistral/route.ts
+ ⚠ ./src/app/api/ocr/mistral/route.ts
+Attempted import error: '@mistralai/mistralai' does not contain a default export (imported as 'Mistral').
+
+Import trace for requested module:
+./src/app/api/ocr/mistral/route.ts
+Upload error: 422 {"detail": [{"type": "enum", "loc": ["form", "purpose"], "msg": "Input should be 'fine-tune', 'batch', 'ocr', 'code_interpreter', 'image_generation', 'audio', 'evaluation' or 'playground'", "ctx": {"expected": "'fine-tune', 'batch', 'ocr', 'code_interpreter', 'image_generation', 'audio', 'evaluation' or 'playground'"}}]}
+Mistral OCR Error: RangeError: offset is out of bounds
+    at Uint8Array.set (<anonymous>)
+    at POST (webpack-internal:///(rsc)/./src/app/api/ocr/mistral/route.ts:79:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:63809
+    at async eU.execute (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:53964)
+    at async eU.handle (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:65062)
+    at async doRender (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\base-server.js:1315:42)
+    at async cacheEntry.responseCache.get.routeKind (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\base-server.js:1537:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\base-server.js:1445:28)
+    at async DevServer.renderPageComponent (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\base-server.js:1842:24)
+    at async DevServer.renderToResponseImpl (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\base-server.js:1880:32)
+    at async DevServer.pipeImpl (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\base-server.js:893:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\next-server.js:269:17)
+    at async DevServer.handleRequestImpl (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\base-server.js:789:17)
+    at async C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\dev\next-dev-server.js:331:20
+    at async Span.traceAsyncFn (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\trace\trace.js:151:20)
+    at async DevServer.handleRequest (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\dev\next-dev-server.js:328:24)
+    at async invokeRender (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (C:\CNTT\TriTueNhanTao\Scan2Word AI\node_modules\next\dist\server\lib\start-server.js:140:13)
+Upload error: 422 {"detail": [{"type": "enum", "loc": ["form", "purpose"], "msg": "Input should be 'fine-tune', 'batch', 'ocr', 'code_interpreter', 'image_generation', 'audio', 'evaluation' or 'playground'", "ctx": {"expected": "'fine-tune', 'batch', 'ocr', 'code_interpreter', 'image_generation', 'audio', 'evaluation' or 'playground'"}}]}

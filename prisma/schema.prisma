@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  fullName  String
+  email     String    @unique
+  password  String
+  role      String    @default("user") // "user" | "admin"
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  uploadedImages UploadedImage[]
+  ocrResults     OCRResult[]
+  exportFiles    ExportFile[]
+}
+
+model UploadedImage {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  sessionId String?  // For guest users without login
+  fileName  String
+  filePath  String
+  fileSize  Int
+  mimeType  String
+  status    String   @default("pending") // "pending" | "processed" | "failed"
+  createdAt DateTime @default(now())
+
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ocrResults OCRResult[]
+}
+
+model OCRResult {
+  id               Int      @id @default(autoincrement())
+  imageId          Int
+  extractedText    String
+  formattedContent String?
+  confidence       Float?
+  language         String   @default("vie")
+  status           String   @default("completed")
+  createdAt        DateTime @default(now())
+
+  image      UploadedImage   @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  user       User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     Int?
+  exportFiles ExportFile[]
+}
+
+model ExportFile {
+  id          Int      @id @default(autoincrement())
+  ocrResultId Int
+  userId      Int?
+  sessionId   String?
+  fileName    String
+  filePath    String
+  fileType    String   // "docx" | "txt" | "pdf"
+  fileSize    Int
+  createdAt   DateTime @default(now())
+
+  ocrResult OCRResult @relation(fields: [ocrResultId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
