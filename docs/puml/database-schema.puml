@@ -1,0 +1,61 @@
+@startuml Scan2Word_Database
+title Database Schema - Scan2Word AI
+
+entity "User" as user {
+  +id: INT (PK) <<autoincrement>>
+  --
+  fullName: VARCHAR(255)
+  email: VARCHAR(255) <<unique>>
+  password: VARCHAR(255)
+  role: VARCHAR(20) <<default: 'user'>>
+  isActive: BOOLEAN <<default: TRUE>>
+  createdAt: DATETIME
+  updatedAt: DATETIME
+}
+
+entity "UploadedImage" as img {
+  +id: INT (PK) <<autoincrement>>
+  --
+  userId: INT (FK) <<nullable>>
+  sessionId: VARCHAR(255)
+  fileName: VARCHAR(255)
+  filePath: VARCHAR(500)
+  fileSize: INT
+  mimeType: VARCHAR(50)
+  status: VARCHAR(20) <<default: 'pending'>>
+  createdAt: DATETIME
+}
+
+entity "OCRResult" as ocr {
+  +id: INT (PK) <<autoincrement>>
+  --
+  imageId: INT (FK)
+  userId: INT (FK) <<nullable>>
+  extractedText: TEXT
+  formattedContent: TEXT
+  confidence: FLOAT
+  language: VARCHAR(10) <<default: 'vie'>>
+  status: VARCHAR(20) <<default: 'completed'>>
+  createdAt: DATETIME
+}
+
+entity "ExportFile" as exp {
+  +id: INT (PK) <<autoincrement>>
+  --
+  ocrResultId: INT (FK)
+  userId: INT (FK) <<nullable>>
+  sessionId: VARCHAR(255)
+  fileName: VARCHAR(255)
+  filePath: VARCHAR(500)
+  fileType: VARCHAR(10)
+  fileSize: INT
+  createdAt: DATETIME
+}
+
+user ||-o{ img : uploads
+user ||-o{ ocr : creates
+user ||-o{ exp : exports
+img ||-o{ ocr : produces
+ocr ||-o{ exp : generates
+
+@enduml

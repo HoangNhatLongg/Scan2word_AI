@@ -1,0 +1,40 @@
+@startuml Scan2Word_Activity_OCR
+title Quy trình OCR và Xuất File
+
+|User|
+start
+:Upload Image;
+:Select OCR Engine (Mistral/Tesseract);
+
+if (Engine == Mistral?) then (Yes)
+  :Call /api/ocr/mistral;
+  |Server|
+  :Save UploadedImage to DB;
+  :Call Mistral OCR API;
+  :Save OCRResult to DB;
+  :Return ocrResultId;
+  |User|
+else (No)
+  :Call Tesseract.js (Client-side);
+  :Call /api/ocr/save;
+  |Server|
+  :Save OCRResult to DB;
+  :Return ocrResultId;
+  |User|
+endif
+
+:Edit Extracted Text;
+
+:Click Export (DOCX/TXT);
+
+if (has ocrResultId?) then (Yes)
+  :Call /api/files/export with ocrResultId;
+  |Server|
+  :Save ExportFile to DB;
+  |User|
+endif
+
+:Download File;
+stop
+
+@enduml

@@ -7,6 +7,9 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
+  icons: {
+    icon: '/logo.png',
+  },
   title: 'Scan2Word AI - Chuyển chữ viết tay sang file Word',
   description: 'Hệ thống AI nhận diện chữ viết tay từ hình ảnh và chuyển đổi thành file Word',
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Navbar } from '@/components/navbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ import {
   UserCog,
   MoreVertical,
   Shield,
+  FileText,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -181,6 +183,12 @@ export default function AdminUsersPage() {
                 Quản lý tài khoản và phân quyền người dùng
               </p>
             </div>
+            <Link href="/admin/files">
+              <Button variant="outline">
+                <FileText className="w-4 h-4 mr-2" />
+                Quản lý Files
+              </Button>
+            </Link>
           </div>
 
           <Card className="mb-6">

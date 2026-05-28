@@ -1,0 +1,47 @@
+@startuml Scan2Word_Sequence_OCR
+title Sequence Diagram - OCR Process
+
+actor User
+participant "Home Page" as Home
+participant "API: /ocr/mistral" as OCRAPI
+participant "Database" as DB
+participant "Mistral Cloud" as Mistral
+
+User -> Home : 1. Upload Image
+Home -> User : 2. Show Preview
+User -> Home : 3. Click "Nhận diện"
+Home -> OCRAPI : 4. POST {imageBase64, fileName}
+activate OCRAPI
+
+OCRAPI -> DB : 5. Create UploadedImage\n   (status: processing)
+OCRAPI -> Mistral : 6. POST OCR Request
+activate Mistral
+
+alt Mistral Success
+  Mistral --> OCRAPI : 7. {pages: [...], confidence}
+  OCRAPI -> DB : 8. Update UploadedImage\n   (status: processed)
+  OCRAPI -> DB : 9. Create OCRResult
+  OCRAPI --> Home : 10. {success, extractedText,\n   ocrResultId}
+else Mistral Error
+  Mistral --> OCRAPI : 7. Error Response
+  OCRAPI -> DB : 8. Update UploadedImage\n   (status: failed)
+  OCRAPI --> Home : 9. {error: ...}
+end
+
+deactivate Mistral
+deactivate OCRAPI
+
+Home -> User : 11. Show Extracted Text
+User -> Home : 12. Edit Text
+User -> Home : 13. Click Export DOCX
+Home -> Home : 14. Create DOCX Blob\n   (Client-side)
+Home -> User : 15. Download File
+
+User -> Home : 16. Click "Xuất file"
+Home -> OCRAPI : 17. POST {text, fileName,\n   fileType, ocrResultId}
+activate OCRAPI
+OCRAPI -> DB : 18. Create ExportFile
+OCRAPI --> Home : 19. Success
+deactivate OCRAPI
+
+@enduml

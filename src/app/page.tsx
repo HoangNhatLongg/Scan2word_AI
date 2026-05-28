@@ -21,6 +21,7 @@ type OCREngine = 'tesseract' | 'mistral'
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [ocrResultId, setOcrResultId] = useState<number | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [extractedText, setExtractedText] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
@@ -121,6 +122,11 @@ export default function HomePage() {
           confidence: data.confidence,
           source: 'mistral'
         }
+        
+        // Save OCR result ID for export tracking
+        if (data.ocrResultId) {
+          setOcrResultId(data.ocrResultId)
+        }
       } else {
         // Use Tesseract.js (fallback)
         const { createWorker } = await import('tesseract.js')
@@ -140,6 +146,25 @@ export default function HomePage() {
           text: data.text, 
           confidence: data.confidence,
           source: 'tesseract'
+        }
+        
+        // Save OCR result for Tesseract
+        try {
+          const saveRes = await fetch('/api/ocr/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: data.text,
+              confidence: data.confidence / 100,
+              source: 'tesseract',
+            }),
+          })
+          const saveData = await saveRes.json()
+          if (saveData.ocrResultId) {
+            setOcrResultId(saveData.ocrResultId)
+          }
+        } catch (e) {
+          console.error('Failed to save Tesseract result:', e)
         }
       }
 
@@ -310,6 +335,7 @@ export default function HomePage() {
                     onExportDocx={(name) => console.log('Export DOCX:', name)}
                     onExportTxt={(name) => console.log('Export TXT:', name)}
                     originalFileName={selectedFile?.name}
+                    ocrResultId={ocrResultId || undefined}
                   />
                 )}
               </CardContent>

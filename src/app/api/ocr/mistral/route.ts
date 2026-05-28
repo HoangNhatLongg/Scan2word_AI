@@ -1,4 +1,11 @@
 import { NextResponse } from 'next/server'
+import prisma from '@/lib/db'
+import { verifyToken } from '@/lib/auth'
+import { writeFile, mkdir } from 'fs/promises'
+import { existsSync } from 'fs'
+import path from 'path'
+
+const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads')
 
 type MistralError = {
   error: string
@@ -7,7 +14,7 @@ type MistralError = {
 
 export async function POST(request: Request) {
   try {
-    const { imageBase64 } = await request.json()
+    const { imageBase64, fileName } = await request.json()
 
     if (!imageBase64 || typeof imageBase64 !== 'string') {
       return NextResponse.json(
@@ -24,27 +31,121 @@ export async function POST(request: Request) {
       )
     }
 
+    // Get user from token
+    const authHeader = request.headers.get('cookie')
+    const token = authHeader?.split('auth_token=')?.[1]?.split(';')?.[0]
+    let userId: number | null = null
+    
+    if (token) {
+      const payload = verifyToken(token)
+      if (payload) {
+        userId = payload.userId
+      }
+    }
+
+    // Detect image type
+    let mimeType = 'image/jpeg'
+    if (imageBase64.includes('data:image/png')) {
+      mimeType = 'image/png'
+    } else if (imageBase64.includes('data:image/webp')) {
+      mimeType = 'image/webp'
+    }
+
+    // Create upload directory if not exists
+    if (!existsSync(UPLOAD_DIR)) {
+      await mkdir(UPLOAD_DIR, { recursive: true })
+    }
+
+    // Save uploaded image to database and file system
+    const ext = mimeType.split('/')[1]
+    const savedFileName = `img_${Date.now()}.${ext}`
+    const filePath = path.join(UPLOAD_DIR, savedFileName)
+    const fileUrl = `/uploads/${savedFileName}`
+
+    // Extract base64 data
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '')
+    const imageBuffer = Buffer.from(base64Data, 'base64')
+    
+    await writeFile(filePath, imageBuffer)
+
+    // Save to UploadedImage table
+    const uploadedImage = await prisma.uploadedImage.create({
+      data: {
+        userId: userId,
+        fileName: fileName || savedFileName,
+        filePath: fileUrl,
+        fileSize: imageBuffer.length,
+        mimeType: mimeType,
+        status: 'processing',
+      },
+    })
+
+    // Process OCR with Mistral
     const imageUrl = normalizeImageDataUrl(imageBase64)
     const ocrResult = await processMistralOCR(imageUrl, apiKey)
 
     if ('error' in ocrResult) {
+      // Update status to failed
+      await prisma.uploadedImage.update({
+        where: { id: uploadedImage.id },
+        data: { status: 'failed' },
+      })
       return NextResponse.json(ocrResult, { status: ocrResult.status || 500 })
     }
 
-    return ocrResult
+    // Extract text from OCR response
+    let extractedText = ''
+    if (Array.isArray(ocrResult.pages)) {
+      for (const page of ocrResult.pages) {
+        if (page.markdown) {
+          extractedText += `${page.markdown}\n\n`
+        }
+      }
+    }
+
+    extractedText = extractedText.trim()
+    if (!extractedText) {
+      await prisma.uploadedImage.update({
+        where: { id: uploadedImage.id },
+        data: { status: 'failed' },
+      })
+      return NextResponse.json({ error: 'Khong tim thay van ban trong hinh anh' }, { status: 404 })
+    }
+
+    const confidence = getAveragePageConfidence(ocrResult)
+
+    // Save OCR result to database
+    const savedOcrResult = await prisma.oCRResult.create({
+      data: {
+        imageId: uploadedImage.id,
+        userId: userId,
+        extractedText: extractedText,
+        formattedContent: extractedText,
+        confidence: confidence / 100,
+        language: 'vie',
+        status: 'completed',
+      },
+    })
+
+    // Update uploaded image status
+    await prisma.uploadedImage.update({
+      where: { id: uploadedImage.id },
+      data: { status: 'processed' },
+    })
+
+    return NextResponse.json({
+      success: true,
+      extractedText: extractedText,
+      rawText: extractedText,
+      source: 'mistral',
+      confidence: confidence,
+      ocrResultId: savedOcrResult.id,
+      imageId: uploadedImage.id,
+    })
   } catch (error: any) {
     console.error('Mistral OCR Error:', error)
-
-    if (error.status === 401) {
-      return NextResponse.json({ error: 'API key Mistral khong hop le' }, { status: 401 })
-    }
-
-    if (error.status === 429) {
-      return NextResponse.json({ error: 'Da vuot qua gioi han su dung Mistral API' }, { status: 429 })
-    }
-
     return NextResponse.json(
-      { error: error.message || 'Loi khi xu ly voi Mistral AI', details: error.code || error.name },
+      { error: error.message || 'Loi khi xu ly voi Mistral AI' },
       { status: 500 }
     )
   }
@@ -54,11 +155,10 @@ function normalizeImageDataUrl(imageBase64: string) {
   if (imageBase64.startsWith('data:image/')) {
     return imageBase64.replace(/[\r\n]/g, '')
   }
-
   return `data:image/jpeg;base64,${imageBase64.replace(/[\r\n]/g, '')}`
 }
 
-async function processMistralOCR(imageUrl: string, apiKey: string): Promise<NextResponse | MistralError> {
+async function processMistralOCR(imageUrl: string, apiKey: string): Promise<any | MistralError> {
   const ocrResponse = await fetch('https://api.mistral.ai/v1/ocr', {
     method: 'POST',
     headers: {
@@ -84,36 +184,7 @@ async function processMistralOCR(imageUrl: string, apiKey: string): Promise<Next
     }
   }
 
-  const parsedData = await ocrResponse.json()
-
-  let extractedText = ''
-  if (Array.isArray(parsedData.pages)) {
-    for (const page of parsedData.pages) {
-      if (page.markdown) {
-        extractedText += `${page.markdown}\n\n`
-      }
-    }
-  }
-
-  extractedText = extractedText.trim()
-  if (!extractedText) {
-    return { error: 'Khong tim thay van ban trong hinh anh', status: 404 }
-  }
-
-  const formattedText = formatText(extractedText)
-  if (!hasReadableText(formattedText)) {
-    return { error: 'Khong tim thay chu doc duoc trong hinh anh', status: 404 }
-  }
-
-  const confidence = getAveragePageConfidence(parsedData)
-
-  return NextResponse.json({
-    success: true,
-    extractedText: formattedText,
-    rawText: extractedText,
-    source: 'mistral',
-    confidence,
-  })
+  return await ocrResponse.json()
 }
 
 function getAveragePageConfidence(parsedData: any): number {
@@ -126,15 +197,4 @@ function getAveragePageConfidence(parsedData: any): number {
   }
 
   return (pageScores.reduce((sum: number, score: number) => sum + score, 0) / pageScores.length) * 100
-}
-
-function formatText(text: string): string {
-  let formatted = text.replace(/\n{3,}/g, '\n\n')
-  formatted = formatted.replace(/0(?=[a-zA-Z])/g, 'O').replace(/1(?=[a-zA-Z])/g, 'l')
-  return formatted.trim()
-}
-
-function hasReadableText(text: string): boolean {
-  const readableCharacters = text.replace(/[|\-_:*\s.,;()[\]{}"'`~!@#$%^&+=\\/<>?]/g, '')
-  return readableCharacters.length > 0
 }

@@ -1,0 +1,122 @@
+@startuml Scan2Word_Class
+title Class Diagram - Scan2Word AI
+
+package "Models" {
+  class User {
+    +id: Int
+    +fullName: String
+    +email: String
+    +password: String
+    +role: String
+    +isActive: Boolean
+    +createdAt: DateTime
+    +updatedAt: DateTime
+    +uploadedImages: UploadedImage[]
+    +ocrResults: OCRResult[]
+    +exportFiles: ExportFile[]
+  }
+
+  class UploadedImage {
+    +id: Int
+    +userId: Int?
+    +sessionId: String?
+    +fileName: String
+    +filePath: String
+    +fileSize: Int
+    +mimeType: String
+    +status: String
+    +createdAt: DateTime
+    +user: User?
+    +ocrResults: OCRResult[]
+  }
+
+  class OCRResult {
+    +id: Int
+    +imageId: Int
+    +extractedText: String
+    +formattedContent: String?
+    +confidence: Float
+    +language: String
+    +status: String
+    +createdAt: DateTime
+    +image: UploadedImage
+    +user: User?
+    +exportFiles: ExportFile[]
+  }
+
+  class ExportFile {
+    +id: Int
+    +ocrResultId: Int
+    +userId: Int?
+    +sessionId: String?
+    +fileName: String
+    +filePath: String
+    +fileType: String
+    +fileSize: Int
+    +createdAt: DateTime
+    +ocrResult: OCRResult
+    +user: User?
+  }
+}
+
+package "Controllers" {
+  class AuthController {
+    +POST login()
+    +POST register()
+    +GET me()
+    +DELETE logout()
+  }
+
+  class OCRController {
+    +POST mistralOCR()
+    +POST saveOCR()
+  }
+
+  class FilesController {
+    +POST exportFile()
+    +GET history()
+  }
+
+  class AdminController {
+    +GET users()
+    +PATCH users()
+    +GET files()
+    +GET stats()
+  }
+}
+
+package "Components" {
+  class Navbar {
+    +user: User
+    +onLogout: Function
+  }
+
+  class ImageUpload {
+    +onFileSelect: Function
+    +preview: string
+  }
+
+  class TextEditor {
+    +text: string
+    +ocrResultId: number
+    +onExportDocx()
+    +onExportTxt()
+  }
+}
+
+User "1" -- "0..*" UploadedImage : uploads
+User "1" -- "0..*" OCRResult : creates
+User "1" -- "0..*" ExportFile : exports
+UploadedImage "1" -- "0..*" OCRResult : produces
+OCRResult "1" -- "0..*" ExportFile : generates
+
+AuthController ..> User : manages
+OCRController ..> UploadedImage : creates
+OCRController ..> OCRResult : creates
+FilesController ..> ExportFile : creates
+AdminController ..> User : queries
+AdminController ..> OCRResult : queries
+
+TextEditor --> OCRResult : references
+
+@enduml

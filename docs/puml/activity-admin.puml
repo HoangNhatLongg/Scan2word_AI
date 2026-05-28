@@ -1,0 +1,39 @@
+@startuml Scan2Word_Activity_Admin
+title Quy trình Admin Quản lý
+
+|#AntiqueWhite|Admin|
+start
+:Login as Admin;
+:Access /admin/users or /admin/files;
+|Server|
+:Fetch Data with Stats;
+|Admin|
+:View Dashboard;
+
+if (Action?) then (View Users)
+  :View User List;
+  :Search/Filter Users;
+  if (Select User?) then (Yes)
+    if (Action?) then (Lock/Unlock)
+      :Toggle isActive;
+      |Server|
+      :Update User Status;
+    elseif (Change Role)
+      :Set Role (admin/user);
+      |Server|
+      :Update User Role;
+    endif
+  endif
+else (View Files)
+  :View File List (Images, OCR, Exports);
+  :Filter by Type;
+  :Search Files;
+  if (Click Detail?) then (Yes)
+    :View File Details;
+    :View OCR Content;
+  endif
+endif
+
+:View Summary Statistics;
+stop
+@enduml

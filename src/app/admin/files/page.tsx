@@ -9,21 +9,28 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
 import { formatDate, formatFileSize } from '@/lib/utils'
 import {
-  Files,
+  FileText,
   Search,
   Loader2,
+  Image,
+  FileUp,
   Download,
-  Trash2,
-  FileImage,
-  User,
-  Ghost,
-  FileText,
-  ExternalLink,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  CheckCircle,
+  XCircle,
+  Clock,
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -34,40 +41,46 @@ interface User {
   role: string
 }
 
-interface ExportFile {
+interface FileItem {
   id: number
-  fileName: string
-  filePath: string
-  fileType: string
-  fileSize: number
+  type: 'uploadedImage' | 'ocrResult' | 'exportFile'
+  fileName?: string
+  fileSize?: number
+  mimeType?: string
+  fileType?: string
+  status: string
   createdAt: string
-  user: {
-    id: number
-    fullName: string
-    email: string
-  } | null
-  ocrResult: {
-    id: number
-    extractedText: string
-    image: {
-      fileName: string
-      filePath: string
-    }
-  }
+  user: { id: number; fullName: string; email: string } | null
+  extractedText?: string
+  confidence?: number
+  image?: { fileName: string; filePath: string }
+  ocrResult?: { id: number; extractedText: string }
+  exportFiles?: { id: number; fileName: string; fileType: string }[]
+}
+
+interface Stats {
+  uploadedImages: number
+  ocrResults: number
+  exportFiles: number
 }
 
 export default function AdminFilesPage() {
   const [adminUser, setAdminUser] = useState<User | null>(null)
-  const [files, setFiles] = useState<ExportFile[]>([])
+  const [files, setFiles] = useState<FileItem[]>([])
+  const [stats, setStats] = useState<Stats>({ uploadedImages: 0, ocrResults: 0, exportFiles: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedFile, setSelectedFile] = useState<ExportFile | null>(null)
+  const [activeTab, setActiveTab] = useState<'all' | 'uploadedImages' | 'ocrResults' | 'exportFiles'>('all')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [selectedItem, setSelectedItem] = useState<FileItem | null>(null)
+  const [showDetailDialog, setShowDetailDialog] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [activeTab, page])
 
   const fetchData = async () => {
     try {
@@ -86,9 +99,18 @@ export default function AdminFilesPage() {
       
       setAdminUser(userData.user)
 
-      const filesRes = await fetch('/api/files')
+      const params = new URLSearchParams({
+        type: activeTab,
+        page: page.toString(),
+        limit: '20',
+      })
+      if (searchQuery) params.append('search', searchQuery)
+
+      const filesRes = await fetch(`/api/admin/files?${params}`)
       const filesData = await filesRes.json()
       setFiles(filesData.files || [])
+      setStats(filesData.stats || { uploadedImages: 0, ocrResults: 0, exportFiles: 0 })
+      setTotalPages(filesData.pagination?.totalPages || 1)
     } catch (error) {
       toast({
         title: 'Lỗi',
@@ -110,33 +132,60 @@ export default function AdminFilesPage() {
     }
   }
 
-  const deleteFile = async (fileId: number) => {
-    if (!confirm('Bạn có chắc muốn xóa file này?')) return
+  const handleSearch = () => {
+    setPage(1)
+    fetchData()
+  }
 
-    try {
-      const res = await fetch(`/api/files?id=${fileId}`, { method: 'DELETE' })
-      if (res.ok) {
-        setFiles(files.filter(f => f.id !== fileId))
-        toast({
-          title: 'Xóa thành công',
-          description: 'File đã được xóa',
-          variant: 'success',
-        })
-      }
-    } catch (error) {
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể xóa file',
-        variant: 'destructive',
-      })
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'processed':
+        return <CheckCircle className="w-4 h-4 text-green-500" />
+      case 'failed':
+        return <XCircle className="w-4 h-4 text-red-500" />
+      default:
+        return <Clock className="w-4 h-4 text-yellow-500" />
     }
   }
 
-  const filteredFiles = files.filter(file =>
-    file.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    file.ocrResult.extractedText.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    file.user?.fullName.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'processed':
+        return 'Hoàn thành'
+      case 'failed':
+        return 'Thất bại'
+      default:
+        return 'Đang xử lý'
+    }
+  }
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'uploadedImage':
+        return <Image className="w-4 h-4" />
+      case 'ocrResult':
+        return <FileText className="w-4 h-4" />
+      case 'exportFile':
+        return <Download className="w-4 h-4" />
+      default:
+        return <FileUp className="w-4 h-4" />
+    }
+  }
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'uploadedImage':
+        return 'Ảnh upload'
+      case 'ocrResult':
+        return 'Kết quả OCR'
+      case 'exportFile':
+        return 'File xuất'
+      default:
+        return type
+    }
+  }
 
   if (isLoading) {
     return (
@@ -151,111 +200,189 @@ export default function AdminFilesPage() {
       <Navbar user={adminUser} onLogout={handleLogout} />
 
       <main className="container py-8 px-4">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-3">
-                <Files className="w-8 h-8" />
-                Quản lý file
+                <FileText className="w-8 h-8" />
+                Quản lý File
               </h1>
               <p className="text-muted-foreground mt-2">
-                Quản lý file xuất của người dùng
+                Xem và quản lý các file đã upload, kết quả OCR và file xuất
               </p>
             </div>
           </div>
 
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Ảnh đã upload</CardTitle>
+                <Image className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.uploadedImages}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Kết quả OCR</CardTitle>
+                <FileText className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.ocrResults}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">File đã xuất</CardTitle>
+                <Download className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.exportFiles}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Tabs */}
           <Card className="mb-6">
             <CardContent className="pt-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Tìm kiếm file..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm kiếm..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  {(['all', 'uploadedImages', 'ocrResults', 'exportFiles'] as const).map((tab) => (
+                    <Button
+                      key={tab}
+                      variant={activeTab === tab ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => { setActiveTab(tab); setPage(1); }}
+                    >
+                      {tab === 'all' ? 'Tất cả' : 
+                       tab === 'uploadedImages' ? 'Ảnh' : 
+                       tab === 'ocrResults' ? 'OCR' : 'Xuất file'}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Files Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Danh sách file xuất</CardTitle>
+              <CardTitle>Danh sách {activeTab === 'all' ? 'file gần đây' : getTypeLabel(activeTab).toLowerCase()}</CardTitle>
               <CardDescription>
-                Tổng cộng {filteredFiles.length} file
+                {activeTab === 'all' ? '5 file gần nhất' : `Tổng cộng ${files.length} mục`}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {filteredFiles.length === 0 ? (
+              {files.length === 0 ? (
                 <div className="text-center py-8">
-                  <Files className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+                  <FileUp className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
                   <p className="text-muted-foreground">
-                    {searchQuery ? 'Không tìm thấy file' : 'Chưa có file nào'}
+                    {searchQuery ? 'Không tìm thấy kết quả' : 'Chưa có file nào'}
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {filteredFiles.map((file) => (
-                    <div 
-                      key={file.id} 
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="p-3 bg-muted rounded-lg">
-                          <FileText className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium truncate">{file.fileName}.{file.fileType}</p>
-                            <span className="text-xs bg-muted px-2 py-0.5 rounded uppercase">
-                              {file.fileType}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                            <span className="flex items-center gap-1">
-                              {file.user ? (
-                                <>
-                                  <User className="w-3 h-3" />
-                                  {file.user.fullName}
-                                </>
-                              ) : (
-                                <>
-                                  <Ghost className="w-3 h-3" />
-                                  Khách
-                                </>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium">Loại</th>
+                        <th className="text-left py-3 px-4 font-medium">Tên file</th>
+                        <th className="text-left py-3 px-4 font-medium">Người dùng</th>
+                        <th className="text-left py-3 px-4 font-medium">Trạng thái</th>
+                        <th className="text-left py-3 px-4 font-medium">Ngày tạo</th>
+                        <th className="text-right py-3 px-4 font-medium">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {files.map((file) => (
+                        <tr key={`${file.type}-${file.id}`} className="border-b hover:bg-muted/50">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              {getTypeIcon(file.type)}
+                              <span className="text-sm">{getTypeLabel(file.type)}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="max-w-[200px] truncate">
+                              <span className="font-medium">{file.fileName || file.image?.fileName || 'N/A'}</span>
+                              {file.fileSize && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  ({formatFileSize(file.fileSize)})
+                                </span>
                               )}
-                            </span>
-                            <span>{formatFileSize(file.fileSize)}</span>
-                            <span>{formatDate(file.createdAt)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedFile(file)}
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => window.open(file.filePath, '_blank')}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => deleteFile(file.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            {file.user ? (
+                              <div>
+                                <div className="font-medium">{file.user.fullName}</div>
+                                <div className="text-xs text-muted-foreground">{file.user.email}</div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">Khách</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(file.status)}
+                              <span className="text-sm">{getStatusLabel(file.status)}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground">
+                            {formatDate(file.createdAt)}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => { setSelectedItem(file); setShowDetailDialog(true); }}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {activeTab !== 'all' && totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Trước
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Trang {page} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    Sau
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -264,56 +391,88 @@ export default function AdminFilesPage() {
       </main>
 
       {/* Detail Dialog */}
-      <Dialog open={!!selectedFile} onOpenChange={() => setSelectedFile(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selectedFile?.fileName}.{selectedFile?.fileType}</DialogTitle>
-            <DialogDescription>
-              {selectedFile && formatDate(selectedFile.createdAt)}
-            </DialogDescription>
+            <DialogTitle>Chi tiết {selectedItem && getTypeLabel(selectedItem.type)}</DialogTitle>
           </DialogHeader>
-          
-          <div className="flex gap-4 mt-4 flex-1 overflow-hidden">
-            <div className="w-1/3 border rounded-lg overflow-hidden">
-              <img
-                src={selectedFile?.ocrResult.image.filePath}
-                alt="Source"
-                className="w-full h-full object-contain bg-muted"
-              />
-            </div>
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Nội dung OCR</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => selectedFile && navigator.clipboard.writeText(selectedFile.ocrResult.extractedText)}
-                >
-                  Sao chép
-                </Button>
+          {selectedItem && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">ID</p>
+                  <p className="font-medium">{selectedItem.id}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Loại</p>
+                  <p className="font-medium">{getTypeLabel(selectedItem.type)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Trạng thái</p>
+                  <p className="font-medium flex items-center gap-2">
+                    {getStatusIcon(selectedItem.status)}
+                    {getStatusLabel(selectedItem.status)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Ngày tạo</p>
+                  <p className="font-medium">{formatDate(selectedItem.createdAt)}</p>
+                </div>
+                {selectedItem.fileName && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground">Tên file</p>
+                    <p className="font-medium">{selectedItem.fileName}</p>
+                  </div>
+                )}
+                {selectedItem.fileSize && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Kích thước</p>
+                    <p className="font-medium">{formatFileSize(selectedItem.fileSize)}</p>
+                  </div>
+                )}
+                {selectedItem.mimeType && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Loại file</p>
+                    <p className="font-medium">{selectedItem.mimeType}</p>
+                  </div>
+                )}
+                {selectedItem.user && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground">Người dùng</p>
+                    <p className="font-medium">{selectedItem.user.fullName} ({selectedItem.user.email})</p>
+                  </div>
+                )}
+                {selectedItem.extractedText && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground mb-2">Nội dung OCR</p>
+                    <div className="bg-muted p-3 rounded-md text-sm max-h-48 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap">{selectedItem.extractedText}</pre>
+                    </div>
+                  </div>
+                )}
+                {selectedItem.confidence && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Độ chính xác</p>
+                    <p className="font-medium">{(selectedItem.confidence * 100).toFixed(1)}%</p>
+                  </div>
+                )}
+                {selectedItem.exportFiles && selectedItem.exportFiles.length > 0 && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground mb-2">File đã xuất</p>
+                    <div className="space-y-2">
+                      {selectedItem.exportFiles.map(exp => (
+                        <div key={exp.id} className="flex items-center gap-2 bg-muted p-2 rounded">
+                          <Download className="w-4 h-4" />
+                          <span className="text-sm">{exp.fileName}</span>
+                          <span className="text-xs text-muted-foreground">({exp.fileType})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex-1 overflow-auto p-4 bg-muted rounded-lg">
-                <pre className="text-sm whitespace-pre-wrap font-mono">
-                  {selectedFile?.ocrResult.extractedText}
-                </pre>
-              </div>
             </div>
-          </div>
-
-          <div className="mt-4 pt-4 border-t flex justify-between">
-            <div className="text-sm text-muted-foreground">
-              Người tạo: {selectedFile?.user?.fullName || 'Khách'}
-              <br />
-              Kích thước: {selectedFile && formatFileSize(selectedFile.fileSize)}
-            </div>
-            <Button
-              size="sm"
-              onClick={() => selectedFile && window.open(selectedFile.filePath, '_blank')}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Tải file
-            </Button>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

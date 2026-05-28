@@ -1,0 +1,91 @@
+@startuml Scan2Word_Architecture
+title System Architecture
+
+package "Frontend" {
+  [Web Browser] as browser
+}
+
+package "Next.js Application" {
+  package "Pages" {
+    [Home Page] as home
+    [Login Page] as login
+    [Register Page] as register
+    [History Page] as history
+    [Admin Users] as admin_users
+    [Admin Files] as admin_files
+  }
+  
+  package "Components" {
+    [Navbar]
+    [ImageUpload]
+    [TextEditor]
+    [Card]
+    [Button]
+  }
+  
+  package "API Routes" {
+    [auth/login] as api_login
+    [auth/register] as api_register
+    [auth/me] as api_me
+    [ocr/mistral] as api_ocr
+    [ocr/save] as api_save
+    [files/export] as api_export
+    [files/history] as api_history
+    [admin/users] as api_admin_users
+    [admin/files] as api_admin_files
+    [admin/stats] as api_admin_stats
+  }
+}
+
+package "Database Layer" {
+  database db [
+    SQLite Database
+    ---
+    - User
+    - UploadedImage
+    - OCRResult
+    - ExportFile
+  ]
+  [Prisma ORM] as prisma
+}
+
+package "External Services" {
+  [Mistral OCR API] as mistral
+  [Tesseract.js CDN] as tesseract
+}
+
+browser --> home : /
+browser --> login : /login
+browser --> register : /register
+browser --> history : /history
+browser --> admin_users : /admin/users
+browser --> admin_files : /admin/files
+
+home --> api_ocr : OCR Request
+home --> tesseract : Client-side OCR
+api_ocr --> mistral : Vision API
+api_ocr --> prisma : Save Result
+api_save --> prisma : Save Result
+api_export --> prisma : Save Export
+api_history --> prisma : Query
+api_admin_users --> prisma : Query
+api_admin_files --> prisma : Query
+api_admin_stats --> prisma : Query
+prisma --> db : SQL
+
+note right of mistral
+  Cloud Service
+  Requires API Key
+end note
+
+note right of tesseract
+  Local Processing
+  No API Key
+end note
+
+note bottom of db
+  SQLite: Lightweight,
+  file-based database
+end note
+
+@enduml
